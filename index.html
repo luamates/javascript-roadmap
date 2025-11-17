@@ -450,45 +450,59 @@
       document
         .getElementById("finalizar-pedido")
         .addEventListener("click", function () {
-          if (pedidoAtual.itens.length > 0) {
-            const desconto =
-              parseFloat(document.getElementById("desconto-pedido").value) || 0;
-            const gorjeta =
-              parseFloat(document.getElementById("gorjeta-pedido").value) || 0;
-            pedidoAtual.desconto = desconto;
-            pedidoAtual.gorjeta = gorjeta;
-            pedidos.push(pedidoAtual);
+            if (pedidoAtual.itens.length > 0) {
+              const desconto =
+                parseFloat(document.getElementById("desconto-pedido").value) || 0;
+              const gorjeta =
+                parseFloat(document.getElementById("gorjeta-pedido").value) || 0;
+              pedidoAtual.desconto = desconto;
+              pedidoAtual.gorjeta = gorjeta;
 
-            const numeroPedido = pedidos.length;
-            const pedidoFinalizado = pedidoAtual; // Salva o pedido atual antes de resetar
+              const pedidoFinalizado = pedidoAtual; // Salva o pedido atual antes de resetar
 
-            // Se houver uma mesa aberta, liberar a mesa automaticamente
-            if (mesaAtual) {
-              mesaAtual.status = "Livre";
-              mesaAtual.pedido = null;
-              atualizarMesas();
+              // Envia pedido para o servidor (append no arquivo txt)
+              fetch('/api/pedidos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pedidoFinalizado)
+              })
+                .then((res) => res.json())
+                .then((saved) => {
+                  // Atualiza array local com o pedido salvo e índice retornado
+                  pedidos.push(saved);
+                  const numeroPedido = pedidos.length;
+
+                  // Se houver uma mesa aberta, liberar a mesa automaticamente
+                  if (mesaAtual) {
+                    mesaAtual.status = 'Livre';
+                    mesaAtual.pedido = null;
+                    atualizarMesas();
+                  }
+
+                  // Resetar pedido atual e UI
+                  pedidoAtual = new Pedido();
+                  atualizarRecibo();
+                  document.getElementById('desconto-pedido').value = 0;
+                  document.getElementById('gorjeta-pedido').value = 0;
+
+                  alert('Pedido finalizado! A mesa foi liberada.');
+
+                  // Pergunta se o usuário deseja baixar o recibo
+                  const desejaBaixar = confirm('Deseja baixar o recibo do pedido agora?');
+                  if (desejaBaixar) {
+                    gerarReciboPDF(saved, numeroPedido);
+                  }
+
+                  // Voltar para visualização de mesas
+                  mesaAtual = null;
+                  mostrarTela('mesas');
+                  atualizarFinalizados();
+                })
+                .catch((err) => {
+                  console.error('Erro ao salvar pedido no servidor:', err);
+                  alert('Erro ao salvar pedido. Veja o console do servidor.');
+                });
             }
-
-            // Resetar pedido atual e UI
-            pedidoAtual = new Pedido();
-            atualizarRecibo();
-            document.getElementById("desconto-pedido").value = 0;
-            document.getElementById("gorjeta-pedido").value = 0;
-
-            alert("Pedido finalizado! A mesa foi liberada.");
-
-            // Pergunta se o usuário deseja baixar o recibo
-            const desejaBaixar = confirm(
-              "Deseja baixar o recibo do pedido agora?"
-            );
-            if (desejaBaixar) {
-              gerarReciboPDF(pedidoFinalizado, numeroPedido);
-            }
-
-            // Voltar para visualização de mesas
-            mesaAtual = null;
-            mostrarTela("mesas");
-          }
         });
 
       // Atualiza recibo do pedido com botões para ajustar quantidade
@@ -741,12 +755,32 @@
         atualizarMesas();
       });
 
-      // Inicializa a tela de mesas e menu ao carregar o sistema
-      mostrarTela("mesas");
-      atualizarMesas();
-      // Garantir que o menu e select sejam preenchidos com o cardápio padrão
-      atualizarMenu();
-      atualizarSelectItem();
+      // Função para carregar pedidos finalizados do servidor (arquivo txt)
+      function loadPedidosFromServer() {
+        return fetch('/api/pedidos')
+          .then((res) => res.json())
+          .then((data) => {
+            if (Array.isArray(data)) {
+              pedidos = data;
+            } else {
+              pedidos = [];
+            }
+            atualizarFinalizados();
+          })
+          .catch((err) => {
+            console.error('Erro ao carregar pedidos do servidor:', err);
+            pedidos = [];
+          });
+      }
+
+      // Inicializa a tela de mesas e menu ao carregar o sistema (carrega pedidos do arquivo)
+      loadPedidosFromServer().finally(() => {
+        mostrarTela('mesas');
+        atualizarMesas();
+        // Garantir que o menu e select sejam preenchidos com o cardápio padrão
+        atualizarMenu();
+        atualizarSelectItem();
+      });
 
       // Estilizar a seção Criar Pedido
       const criarPedidoSection = document.getElementById("tela-pedido");
