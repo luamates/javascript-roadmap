@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body style="text-align: center; padding-top: 50px">
+    <form style="width: 50%; margin-left: 25%">
+      <input type="text" placeholder="Item" id="addItem" />
+      <button type="button" onclick="atualizarLista()">Adicionar</button>
+
+      <button type="button" onclick="removerDaLista()" id="retirada">
+        Remover último item
+      </button>
+
+      <button type="button" onclick="limparLista()" id="exclusao">
+        Excluir todos os itens
+      </button>
+    </form>
+
+    <h3 id="lista"></h3>
+
+    <script>
+      let itens = [];
+      visualizar();
+
+      function atualizarLista() {
+        let item = "";
+        item = document.getElementById("addItem").value;
+        if (item === "") {
+          alert("Digite um item antes!");
+          return;
+        }
+
+        itens.push(item);
+        mostrarLista();
+      }
+
+      function removerDaLista() {
+        itens.pop();
+        mostrarLista();
+      }
+
+      function mostrarLista() {
+        document.getElementById("addItem").value = "";
+
+        let listagem = "";
+        let i;
+
+        for (i = 0; i < itens.length; i++) {
+          listagem += i + 1 + " - " + itens[i] + "<br>";
+        }
+
+        document.getElementById("lista").innerHTML = listagem;
+        visualizar();
+      }
+
+      function limparLista() {
+        itens = [];
+        mostrarLista();
+        alert("Todos os itens foram excluidos!");
+      }
+
+      function visualizar() {
+        let teste = itens.length;
+
+        if (teste == 0) {
+          document.getElementById("retirada").style.display = "none";
+          document.getElementById("exclusao").style.display = "none";
+        } else {
+          document.getElementById("retirada").style.display = "inline";
+          document.getElementById("exclusao").style.display = "inline";
+        }
+      }
+    </script>
+  </body>
+</html>

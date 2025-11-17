@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora de gorjetas</title>
+  </head>
+  <body>
+    <h1>Calculadora de gorjetas</h1>
+    <input type="number" id="valor" placeholder="Valor da conta" />
+
+    <h2>Eu sou:</h2>
+
+    <p>
+      <input type="radio" name="gorjetas" id="rico" value="0.4" />
+      <label for="rico">Rico</label>
+    </p>
+
+    <p>
+      <input type="radio" name="gorjetas" id="media" value="0.25" />
+      <label for="media">Classe média</label>
+    </p>
+
+    <p>
+      <input type="radio" name="gorjetas" id="pobre" value="0.1" />
+      <label for="pobre">Pobre</label>
+    </p>
+
+    <button type="button" onclick="calcular()">Calcular</button>
+
+    <h1 id="final"></h1>
+
+    <script>
+      function calcular() {
+        let conta = Number(document.getElementById("valor").value);
+
+        if (!conta) {
+          document.getElementById("final").innerHTML =
+            "O valor deve ser inserido!";
+          return;
+        }
+
+        let gorjeta = 0;
+
+        if (document.getElementById("rico").checked) {
+          gorjeta = Number(document.getElementById("rico").value);
+        } else if (document.getElementById("media").checked) {
+          gorjeta = Number(document.getElementById("media").value);
+        } else if (document.getElementById("pobre").checked) {
+          gorjeta = Number(document.getElementById("pobre").value);
+        }
+
+        conta = conta * (1 + gorjeta);
+
+        document.getElementById("final").innerHTML = "Valor total: R$ " + conta;
+      }
+    </script>
+  </body>
+</html>
