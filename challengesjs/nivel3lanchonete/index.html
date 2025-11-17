@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- jsPDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #e3f0ff 0%, #b3d1ff 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      h1 {
+        color: #1565c0;
+        text-align: center;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        font-size: 2.5rem;
+      }
+      section {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(21, 101, 192, 0.08);
+        max-width: 500px;
+        margin: 24px auto;
+        padding: 24px 32px;
+      }
+      h2,
+      h3 {
+        color: #1976d2;
+        margin-bottom: 16px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      input,
+      select,
+      button {
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #90caf9;
+        font-size: 1rem;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid #1976d2;
+      }
+      button {
+        background: linear-gradient(90deg, #1976d2 60%, #64b5f6 100%);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: linear-gradient(90deg, #1565c0 60%, #42a5f5 100%);
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      ul li {
+        background: #e3f2fd;
+        margin-bottom: 8px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #lista-finalizados li button {
+        margin-left: 16px;
+        background: #1976d2;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      #lista-finalizados li button:hover {
+        background: #1565c0;
+      }
+      .nav-btns {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      .nav-btns button {
+        min-width: 140px;
+      }
+      label {
+        color: #1976d2;
+        font-weight: 500;
+      }
+      #total-pedido {
+        font-size: 1.1rem;
+        color: #0d47a1;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+      @media (max-width: 600px) {
+        section {
+          max-width: 98vw;
+          padding: 12px 6vw;
+        }
+        h1 {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sistema de Caixa - Lanchonete</h1>
+
+    <!-- Botões de navegação -->
+    <div class="nav-btns">
+      <button onclick="mostrarTela('cadastro')">Cadastro de Itens</button>
+      <button onclick="mostrarTela('menu')">Menu</button>
+      <button onclick="mostrarTela('pedido')">Criar Pedido</button>
+      <button onclick="mostrarTela('finalizados')">Pedidos Finalizados</button>
+    </div>
+
+    <!-- Cadastro de Itens do Menu -->
+    <section id="tela-cadastro" style="display: none">
+      <h2>Cadastro de Item do Menu</h2>
+      <form id="form-cadastro-item">
+        <input type="text" id="nome-item" placeholder="Nome do item" required />
+        <input
+          type="number"
+          id="preco-item"
+          placeholder="Preço"
+          step="0.01"
+          required
+        />
+        <button type="submit">Cadastrar Item</button>
+      </form>
+    </section>
+
+    <!-- Exibição do Menu -->
+    <section id="tela-menu" style="display: none">
+      <h2>Menu Atual</h2>
+      <ul id="menu-list"></ul>
+    </section>
+
+    <!-- Criação de Pedido -->
+    <section id="tela-pedido" style="display: none">
+      <h2>Criar Pedido</h2>
+      <form id="form-pedido">
+        <select id="select-item" required></select>
+        <input
+          type="number"
+          id="quantidade-item"
+          placeholder="Quantidade"
+          min="1"
+          value="1"
+          required
+        />
+        <button type="submit">Adicionar ao Pedido</button>
+      </form>
+      <div>
+        <label
+          >Desconto (R$):
+          <input
+            type="number"
+            id="desconto-pedido"
+            min="0"
+            step="0.01"
+            value="0"
+        /></label>
+        <label
+          >Gorjeta (R$):
+          <input
+            type="number"
+            id="gorjeta-pedido"
+            min="0"
+            step="0.01"
+            value="0"
+        /></label>
+      </div>
+      <button
+        id="voltar-mesas"
+        type="button"
+        style="
+          background: #fff;
+          color: #1976d2;
+          border: 1px solid #1976d2;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-weight: 600;
+          margin-bottom: 10px;
+        "
+      >
+        Voltar às Mesas
+      </button>
+      <button id="finalizar-pedido">Finalizar Pedido</button>
+      <h3>Recibo do Pedido</h3>
+      <ul id="recibo-list"></ul>
+      <p id="total-pedido"></p>
+    </section>
+
+    <!-- Pedidos Finalizados -->
+    <section id="tela-finalizados" style="display: none">
+      <h2>Pedidos Finalizados</h2>
+      <ul id="lista-finalizados"></ul>
+    </section>
+
+    <!-- Seleção de Mesas -->
+    <section id="tela-mesas" style="display: none">
+      <h2>Selecione uma Mesa</h2>
+      <div
+        id="mesa-list"
+        style="display: flex; flex-wrap: wrap; gap: 10px"
+      ></div>
+    </section>
+
+    <script src="./controller.js"></script>
+
+    <script>
+      function mostrarTela(tela) {
+        document.getElementById("tela-cadastro").style.display = "none";
+        document.getElementById("tela-menu").style.display = "none";
+        document.getElementById("tela-pedido").style.display = "none";
+        document.getElementById("tela-finalizados").style.display = "none";
+        document.getElementById("tela-mesas").style.display = "none";
+        if (tela === "cadastro")
+          document.getElementById("tela-cadastro").style.display = "block";
+        if (tela === "menu")
+          document.getElementById("tela-menu").style.display = "block";
+        if (tela === "pedido")
+          document.getElementById("tela-pedido").style.display = "block";
+        if (tela === "finalizados") {
+          document.getElementById("tela-finalizados").style.display = "block";
+          atualizarFinalizados();
+        }
+        if (tela === "mesas") {
+          document.getElementById("tela-mesas").style.display = "block";
+          atualizarMesas();
+        }
+      }
+
+      // Atualiza a lista do menu com botões de editar e excluir fixos
+      function atualizarMenu() {
+        const menuList = document.getElementById("menu-list");
+        menuList.innerHTML = "";
+        menuItems.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.style.display = "flex";
+          li.style.justifyContent = "space-between";
+          li.style.alignItems = "center";
+
+          const itemText = document.createElement("span");
+          itemText.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+          li.appendChild(itemText);
+
+          const buttonContainer = document.createElement("div");
+          buttonContainer.style.display = "flex";
+          buttonContainer.style.gap = "10px";
+
+          // Botão Editar
+          const btnEditar = document.createElement("button");
+          btnEditar.textContent = "Editar";
+          btnEditar.onclick = function () {
+            const novoNome = prompt("Digite o novo nome do item:", item.nome);
+            const novoPreco = parseFloat(
+              prompt("Digite o novo preço do item:", item.preco)
+            );
+            if (novoNome && !isNaN(novoPreco)) {
+              item.nome = novoNome;
+              item.preco = novoPreco;
+              atualizarMenu();
+              alert("Item atualizado com sucesso!");
+            } else {
+              alert("Valores inválidos!");
+            }
+          };
+
+          // Botão Excluir
+          const btnExcluir = document.createElement("button");
+          btnExcluir.textContent = "Excluir";
+          btnExcluir.onclick = function () {
+            if (
+              confirm(`Tem certeza que deseja excluir o item "${item.nome}"?`)
+            ) {
+              menuItems.splice(idx, 1);
+              atualizarMenu();
+              alert("Item excluído com sucesso!");
+            }
+          };
+
+          buttonContainer.appendChild(btnEditar);
+          buttonContainer.appendChild(btnExcluir);
+          li.appendChild(buttonContainer);
+          menuList.appendChild(li);
+        });
+        atualizarSelectItem();
+      }
+
+      // Atualiza o select de itens do menu para pedidos
+      function atualizarSelectItem() {
+        const select = document.getElementById("select-item");
+        select.innerHTML = "";
+
+        // Adiciona uma opção inicial vazia
+        const optionVazia = document.createElement("option");
+        optionVazia.value = "";
+        optionVazia.textContent = "Selecione um item";
+        optionVazia.disabled = true;
+        optionVazia.selected = true;
+        select.appendChild(optionVazia);
+
+        menuItems.forEach((item, idx) => {
+          const option = document.createElement("option");
+          option.value = idx;
+          option.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+          select.appendChild(option);
+        });
+      }
+
+      // Cadastro de item do menu
+      document
+        .getElementById("form-cadastro-item")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const nome = document.getElementById("nome-item").value;
+          const preco = parseFloat(document.getElementById("preco-item").value);
+          if (nome && !isNaN(preco)) {
+            const novoItem = new Item(nome, preco);
+            menuItems.push(novoItem);
+            atualizarMenu();
+            this.reset();
+          }
+        });
+
+      // Pedido atual
+      let pedidoAtual = new Pedido();
+      // Flag para detectar se o usuário editou a gorjeta manualmente
+      let gorjetaManual = false;
+
+      // Adiciona item ao pedido
+      document
+        .getElementById("form-pedido")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const idx = parseInt(document.getElementById("select-item").value);
+          const quantidade = parseInt(
+            document.getElementById("quantidade-item").value
+          );
+          if (!isNaN(idx) && !isNaN(quantidade) && quantidade > 0) {
+            pedidoAtual.adicionarItem(menuItems[idx], quantidade);
+            // marcar mesa como pendente e vincular pedido
+            if (mesaAtual) {
+              mesaAtual.status = "Pendente";
+              mesaAtual.pedido = pedidoAtual;
+              atualizarMesas();
+            }
+            atualizarRecibo();
+            this.reset();
+            atualizarSelectItem();
+          }
+        });
+
+      // Detecta quando o usuário altera a gorjeta manualmente
+      document
+        .getElementById("gorjeta-pedido")
+        .addEventListener("input", function () {
+          gorjetaManual = true;
+          const v = parseFloat(this.value);
+          pedidoAtual.gorjeta = !isNaN(v) ? v : 0;
+          atualizarRecibo();
+        });
+
+      // Finaliza pedido com opção de baixar o recibo em PDF
+      document
+        .getElementById("finalizar-pedido")
+        .addEventListener("click", function () {
+          if (pedidoAtual.itens.length > 0) {
+            const desconto =
+              parseFloat(document.getElementById("desconto-pedido").value) || 0;
+            const gorjeta =
+              parseFloat(document.getElementById("gorjeta-pedido").value) || 0;
+            pedidoAtual.desconto = desconto;
+            pedidoAtual.gorjeta = gorjeta;
+            pedidos.push(pedidoAtual);
+
+            const numeroPedido = pedidos.length;
+            const pedidoFinalizado = pedidoAtual; // Salva o pedido atual antes de resetar
+
+            // Se houver uma mesa aberta, liberar a mesa automaticamente
+            if (mesaAtual) {
+              mesaAtual.status = "Livre";
+              mesaAtual.pedido = null;
+              atualizarMesas();
+            }
+
+            // Resetar pedido atual e UI
+            pedidoAtual = new Pedido();
+            atualizarRecibo();
+            document.getElementById("desconto-pedido").value = 0;
+            document.getElementById("gorjeta-pedido").value = 0;
+
+            alert("Pedido finalizado! A mesa foi liberada.");
+
+            // Pergunta se o usuário deseja baixar o recibo
+            const desejaBaixar = confirm(
+              "Deseja baixar o recibo do pedido agora?"
+            );
+            if (desejaBaixar) {
+              gerarReciboPDF(pedidoFinalizado, numeroPedido);
+            }
+
+            // Voltar para visualização de mesas
+            mesaAtual = null;
+            mostrarTela("mesas");
+          }
+        });
+
+      // Atualiza recibo do pedido com botões para ajustar quantidade
+      function atualizarRecibo() {
+        const reciboList = document.getElementById("recibo-list");
+        reciboList.innerHTML = "";
+        let total = 0;
+        pedidoAtual.itens.forEach(({ item, quantidade }, index) => {
+          const li = document.createElement("li");
+          li.textContent = `${item.nome} - R$ ${(
+            item.preco * quantidade
+          ).toFixed(2)} (x${quantidade})`;
+
+          // Botão para aumentar quantidade
+          const btnAumentar = document.createElement("button");
+          btnAumentar.innerHTML = "+"; // Ícone de aumentar
+          btnAumentar.style.marginLeft = "10px";
+          btnAumentar.onclick = function () {
+            pedidoAtual.itens[index].quantidade += 1;
+            if (mesaAtual) {
+              mesaAtual.status = "Pendente";
+              mesaAtual.pedido = pedidoAtual;
+              atualizarMesas();
+            }
+            atualizarRecibo();
+          };
+
+          // Botão para diminuir quantidade
+          const btnDiminuir = document.createElement("button");
+          btnDiminuir.innerHTML = "-"; // Ícone de diminuir
+          btnDiminuir.style.marginLeft = "5px";
+          btnDiminuir.onclick = function () {
+            if (pedidoAtual.itens[index].quantidade > 1) {
+              pedidoAtual.itens[index].quantidade -= 1;
+            } else {
+              pedidoAtual.itens.splice(index, 1); // Remove o item se a quantidade for 0
+            }
+            // atualizar status da mesa
+            if (mesaAtual) {
+              if (pedidoAtual.itens.length === 0) {
+                mesaAtual.status = "Livre";
+                mesaAtual.pedido = null;
+              } else {
+                mesaAtual.status = "Pendente";
+                mesaAtual.pedido = pedidoAtual;
+              }
+              atualizarMesas();
+            }
+            atualizarRecibo();
+          };
+
+          li.appendChild(btnAumentar);
+          li.appendChild(btnDiminuir);
+          reciboList.appendChild(li);
+
+          total += item.preco * quantidade;
+        });
+
+        // Ler desconto do campo (usuário pode alterar)
+        let desconto =
+          parseFloat(document.getElementById("desconto-pedido").value) || 0;
+
+        // Gorjeta automática de 15% por padrão, a menos que o usuário tenha editado manualmente
+        let gorjeta;
+        if (!gorjetaManual) {
+          gorjeta = +(total * 0.15).toFixed(2);
+          document.getElementById("gorjeta-pedido").value = gorjeta.toFixed(2);
+          pedidoAtual.gorjeta = gorjeta;
+        } else {
+          gorjeta =
+            parseFloat(document.getElementById("gorjeta-pedido").value) || 0;
+          pedidoAtual.gorjeta = gorjeta;
+        }
+
+        let totalFinal = total - desconto + gorjeta;
+        document.getElementById(
+          "total-pedido"
+        ).textContent = `Subtotal: R$ ${total.toFixed(
+          2
+        )} | Desconto: R$ ${desconto.toFixed(
+          2
+        )} | Gorjeta: R$ ${gorjeta.toFixed(2)} | Total: R$ ${totalFinal.toFixed(
+          2
+        )}`;
+      }
+
+      // Atualiza lista de pedidos finalizados
+      function atualizarFinalizados() {
+        const lista = document.getElementById("lista-finalizados");
+        lista.innerHTML = "";
+        pedidos.forEach((pedido, idx) => {
+          let total = 0;
+          let itensStr = pedido.itens
+            .map(({ item, quantidade }) => `${item.nome} x${quantidade}`)
+            .join(", ");
+          pedido.itens.forEach(({ item, quantidade }) => {
+            total += item.preco * quantidade;
+          });
+          let desconto = pedido.desconto || 0;
+          let gorjeta = pedido.gorjeta || 0;
+          let totalFinal = total - desconto + gorjeta;
+
+          const li = document.createElement("li");
+          li.textContent = `Pedido #${
+            idx + 1
+          }: ${itensStr} | Subtotal: R$ ${total.toFixed(
+            2
+          )} | Desconto: R$ ${desconto.toFixed(
+            2
+          )} | Gorjeta: R$ ${gorjeta.toFixed(
+            2
+          )} | Total: R$ ${totalFinal.toFixed(2)}`;
+
+          // Botão para gerar PDF
+          const btnPDF = document.createElement("button");
+          btnPDF.textContent = "Gerar PDF";
+          btnPDF.onclick = function () {
+            gerarReciboPDF(pedido, idx + 1);
+          };
+          li.appendChild(btnPDF);
+
+          lista.appendChild(li);
+        });
+      }
+
+      // Função para gerar PDF do recibo estilizado
+      function gerarReciboPDF(pedido, numeroPedido) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let y = 15;
+
+        // Cabeçalho azul
+        doc.setFillColor(21, 101, 192); // #1565c0
+        doc.rect(0, 0, 210, 20, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.text("Lanchonete Blue", 105, 12, { align: "center" });
+        doc.setFontSize(12);
+        doc.text(`Recibo do Pedido #${numeroPedido}`, 105, 18, {
+          align: "center",
+        });
+
+        // Reset cor texto
+        doc.setTextColor(33, 33, 33);
+        y = 28;
+
+        // Tabela de itens
+        doc.setFontSize(13);
+        doc.text("Itens", 12, y);
+        doc.text("Qtd", 90, y);
+        doc.text("Valor", 160, y);
+        y += 4;
+        doc.setDrawColor(21, 101, 192);
+        doc.line(10, y, 200, y);
+        y += 6;
+        let total = 0;
+        pedido.itens.forEach(({ item, quantidade }) => {
+          doc.text(item.nome, 12, y);
+          doc.text(String(quantidade), 90, y, { align: "right" });
+          doc.text(`R$ ${(item.preco * quantidade).toFixed(2)}`, 160, y, {
+            align: "right",
+          });
+          total += item.preco * quantidade;
+          y += 8;
+        });
+        y += 2;
+        doc.setDrawColor(21, 101, 192);
+        doc.line(10, y, 200, y);
+        y += 8;
+
+        // Resumo financeiro
+        let desconto = pedido.desconto || 0;
+        let gorjeta = pedido.gorjeta || 0;
+        let totalFinal = total - desconto + gorjeta;
+        doc.setFontSize(12);
+        doc.text(`Subtotal:`, 120, y);
+        doc.text(`R$ ${total.toFixed(2)}`, 160, y, { align: "right" });
+        y += 7;
+        doc.text(`Desconto:`, 120, y);
+        doc.text(`R$ ${desconto.toFixed(2)}`, 160, y, { align: "right" });
+        y += 7;
+        doc.text(`Gorjeta:`, 120, y);
+        doc.text(`R$ ${gorjeta.toFixed(2)}`, 160, y, { align: "right" });
+        y += 7;
+        doc.setFontSize(14);
+        doc.setTextColor(21, 101, 192);
+        doc.text(`Total:`, 120, y);
+        doc.text(`R$ ${totalFinal.toFixed(2)}`, 160, y, { align: "right" });
+
+        // Rodapé
+        doc.setFontSize(10);
+        doc.setTextColor(33, 33, 33);
+        doc.text("Obrigado pela preferência!", 105, 285, { align: "center" });
+
+        doc.save(`recibo_pedido_${numeroPedido}.pdf`);
+      }
+
+      // Gerenciar mesas e pedidos associados
+      const mesas = Array.from({ length: 10 }, (_, i) => ({
+        numero: i + 1,
+        status: "Livre",
+        pedido: null,
+      }));
+      let mesaAtual = null;
+
+      // Atualiza a tela de seleção de mesas
+      function atualizarMesas() {
+        const mesaList = document.getElementById("mesa-list");
+        mesaList.innerHTML = "";
+        mesas.forEach((mesa) => {
+          const btnMesa = document.createElement("button");
+          btnMesa.textContent = `Mesa ${mesa.numero} - ${mesa.status}`;
+          btnMesa.style.margin = "10px";
+          btnMesa.style.backgroundColor =
+            mesa.status === "Livre" ? "#4caf50" : "#ff9800";
+          btnMesa.onclick = () => selecionarMesa(mesa);
+          mesaList.appendChild(btnMesa);
+        });
+      }
+
+      // Ajustar botão Criar Pedido para abrir a tela de seleção de mesas
+      document.querySelector(
+        "button[onclick=\"mostrarTela('pedido')\"]"
+      ).onclick = function () {
+        mostrarTela("mesas");
+      };
+
+      // Seleciona uma mesa e abre a tela de pedido
+      function selecionarMesa(mesa) {
+        mesaAtual = mesa;
+        mostrarTela("pedido");
+        if (!mesa.pedido) {
+          mesa.pedido = new Pedido();
+        }
+        pedidoAtual = mesa.pedido;
+        atualizarRecibo();
+      }
+
+      // Voltar para a tela de seleção de mesas
+      document.getElementById("voltar-mesas").addEventListener("click", () => {
+        if (mesaAtual && mesaAtual.pedido.itens.length > 0) {
+          mesaAtual.status = "Pendente";
+        } else if (mesaAtual) {
+          mesaAtual.status = "Livre";
+          mesaAtual.pedido = null;
+        }
+        mesaAtual = null;
+        pedidoAtual = new Pedido();
+        mostrarTela("mesas");
+        atualizarMesas();
+      });
+
+      // Inicializa a tela de mesas e menu ao carregar o sistema
+      mostrarTela("mesas");
+      atualizarMesas();
+      // Garantir que o menu e select sejam preenchidos com o cardápio padrão
+      atualizarMenu();
+      atualizarSelectItem();
+
+      // Estilizar a seção Criar Pedido
+      const criarPedidoSection = document.getElementById("tela-pedido");
+      criarPedidoSection.style.display = "flex";
+      criarPedidoSection.style.flexDirection = "column";
+      criarPedidoSection.style.gap = "20px";
+
+      const formPedido = document.getElementById("form-pedido");
+      formPedido.style.display = "flex";
+      formPedido.style.flexDirection = "column";
+      formPedido.style.gap = "15px";
+
+      const descontoGorjetaContainer = document.createElement("div");
+      descontoGorjetaContainer.style.display = "flex";
+      descontoGorjetaContainer.style.justifyContent = "space-between";
+      descontoGorjetaContainer.style.gap = "20px";
+
+      const descontoField =
+        document.getElementById("desconto-pedido").parentElement;
+      const gorjetaField =
+        document.getElementById("gorjeta-pedido").parentElement;
+
+      descontoField.style.flex = "1";
+      gorjetaField.style.flex = "1";
+
+      descontoGorjetaContainer.appendChild(descontoField);
+      descontoGorjetaContainer.appendChild(gorjetaField);
+
+      formPedido.appendChild(descontoGorjetaContainer);
+
+      const finalizarButton = document.getElementById("finalizar-pedido");
+      finalizarButton.style.marginTop = "20px";
+      finalizarButton.style.alignSelf = "center";
+    </script>
+  </body>
+</html>
